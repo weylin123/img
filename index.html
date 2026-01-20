@@ -380,7 +380,7 @@
     <div class="light-rays"></div>
     <div class="music-notes" id="musicNotes"></div>
     
-    <audio id="bgMusic" loop crossorigin="anonymous" preload="auto">
+    <audio id="bgMusic" loop crossorigin="anonymous" preload="auto" muted>
         <source src="./By2 - 爱丫爱丫.mp3" type="audio/mpeg">
     
         您的浏览器不支持音频播放
@@ -601,9 +601,57 @@
         createGallery();
         createParticles();
 
+        createGallery();
+        createParticles();
+
+        // 页面加载完成后直接显示播放提示
         window.addEventListener('load', () => {
-            console.log('页面加载完成，音乐播放器已就绪');
-            bgMusic.load();
+            console.log('页面加载完成');
+            
+            // 直接显示播放提示，让用户手动点击
+            const playHint = document.createElement('div');
+            playHint.id = 'playHint';
+            playHint.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+                backdrop-filter: blur(15px);
+                border: 2px solid rgba(255,255,255,0.3);
+                color: white;
+                padding: 25px 50px;
+                border-radius: 20px;
+                font-size: 20px;
+                z-index: 10000;
+                cursor: pointer;
+                text-align: center;
+                animation: pulse 2s ease-in-out infinite;
+                box-shadow: 0 0 30px rgba(255,255,255,0.3);
+            `;
+            playHint.innerHTML = '🎵 点击播放音乐<br><small style="opacity: 0.8">享受浪漫时光</small>';
+            playHint.onclick = function() {
+                bgMusic.muted = false;
+                bgMusic.play().then(() => {
+                    musicBtn.textContent = '⏸️';
+                    musicBtn.classList.add('playing');
+                    startMusicNotes();
+                    isPlaying = true;
+                    playHint.remove();
+                });
+            };
+            document.body.appendChild(playHint);
+            
+            // 5秒后提示自动消失，但用户仍可点击右上角按钮
+            setTimeout(() => {
+                playHint.style.opacity = '0';
+                playHint.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(() => {
+                    if (document.getElementById('playHint')) {
+                        playHint.remove();
+                    }
+                }, 500);
+            }, 5000);
         });
 
         bgMusic.addEventListener('error', (e) => {
