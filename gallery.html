@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D相册展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .gallery-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            perspective: 1500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gallery {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            transform-style: preserve-3d;
+            animation: rotate 30s infinite linear;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery:hover {
+            animation-play-state: paused;
+        }
+
+        .card {
+            position: absolute;
+            width: 300px;
+            height: 400px;
+            left: 0;
+            top: 0;
+            transform-style: preserve-3d;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .card:hover {
+            transform: translateZ(50px) scale(1.1);
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.5);
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-front {
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-back {
+            background: linear-gradient(145deg, rgba(100, 100, 255, 0.3), rgba(100, 100, 255, 0.1));
+            transform: rotateY(180deg);
+            border: 2px solid rgba(100, 100, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(100, 100, 255, 0.3);
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .card-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .card:hover .card-front img {
+            transform: scale(1.1);
+        }
+
+        .card-back h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .card-back p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotateY(0deg);
+            }
+            to {
+                transform: rotateY(360deg);
+            }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: float 15s infinite;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .title {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                         0 0 40px rgba(255, 255, 255, 0.6),
+                         0 0 60px rgba(255, 255, 255, 0.4);
+            z-index: 100;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                             0 0 40px rgba(255, 255, 255, 0.6),
+                             0 0 60px rgba(255, 255, 255, 0.4);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(255, 255, 255, 1),
+                             0 0 60px rgba(255, 255, 255, 0.8),
+                             0 0 90px rgba(255, 255, 255, 0.6);
+            }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            padding: 12px 30px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(145deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .music-control {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .music-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .music-btn:hover {
+            background: linear-gradient(145deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .music-btn.playing {
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(255, 255, 255, 0);
+            }
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .music-notes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .note {
+            position: absolute;
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.6);
+            animation: noteFloat 8s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes noteFloat {
+            0% {
+                transform: translateY(100vh) rotate(0deg) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .reflection {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .light-rays {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg at 50% 50%, 
+                transparent 0deg, 
+                rgba(255,255,255,0.03) 10deg, 
+                transparent 20deg);
+            animation: rays 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes rays {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="light-rays"></div>
+    <div class="music-notes" id="musicNotes"></div>
+    
+    <audio id="bgMusic" loop crossorigin="anonymous" preload="auto">
+        <source src="./By2 - 爱丫爱丫.mp3" type="audio/mpeg">
+    
+        您的浏览器不支持音频播放
+    </audio>
+    
+    <input type="file" id="musicFileInput" accept="audio/*" style="display: none;" onchange="loadMusicFile(event)">
+    
+    <div class="music-control">
+        <div class="volume-control">
+            <span style="color: white; font-size: 1.2rem;">🔊</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+        </div>
+        <button class="control-btn" onclick="document.getElementById('musicFileInput').click()" style="padding: 8px 20px; font-size: 0.9rem;">选择音乐</button>
+        <button class="music-btn" id="musicBtn" onclick="toggleMusic()">▶️</button>
+    </div>
+    
+    <h1 class="title">✨ 老婆老婆你最漂亮 ✨</h1>
+    
+    <div class="gallery-container">
+        <div class="gallery" id="gallery">
+        </div>
+    </div>
+    
+    <div class="reflection"></div>
+    
+    <div class="controls">
+        <button class="control-btn" onclick="toggleRotation()">暂停/继续</button>
+        <button class="control-btn" onclick="changeSpeed()">切换速度</button>
+    </div>
+
+    <script>
+        const gallery = document.getElementById('gallery');
+        const particlesContainer = document.getElementById('particles');
+        const musicNotesContainer = document.getElementById('musicNotes');
+        const bgMusic = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('musicBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        
+        let isPlaying = false;
+        let noteInterval;
+        
+        const images = [
+            { src: '/img/1.jpg', title: '美好回忆', desc: '记录生活中的每一个精彩瞬间' },
+            { src: '/img/2.jpg', title: '旅行足迹', desc: '走过的地方，看过的风景' },
+            { src: '/img/3.jpg', title: '友情时光', desc: '与朋友共度的美好时光' },
+            { src: '/img/3.jpg', title: '家庭温馨', desc: '家人团聚的温暖时刻' },
+            { src: '/img/4.jpg', title: '自然风光', desc: '大自然的鬼斧神工' },
+            { src: '/img/5.jpg', title: '城市夜景', desc: '繁华都市的璀璨灯火' },
+            { src: '/img/3.jpg', title: '美食分享', desc: '舌尖上的美味体验' },
+            { src: '/img/2.jpg', title: '艺术创作', desc: '用镜头捕捉艺术之美' }
+        ];
+
+        const colors = [
+            'linear-gradient(145deg, #ff6b6b, #ee5a5a)',
+            'linear-gradient(145deg, #4ecdc4, #44a08d)',
+            'linear-gradient(145deg, #a8e6cf, #88d8b0)',
+            'linear-gradient(145deg, #ffd93d, #ff9a3c)',
+            'linear-gradient(145deg, #6c5ce7, #a29bfe)',
+            'linear-gradient(145deg, #fd79a8, #e84393)',
+            'linear-gradient(145deg, #00b894, #00cec9)',
+            'linear-gradient(145deg, #e17055, #d63031)'
+        ];
+
+        let isRotating = true;
+        let currentSpeed = 30;
+
+        function toggleMusic() {
+            if (isPlaying) {
+                bgMusic.pause();
+                musicBtn.textContent = '▶️';
+                musicBtn.classList.remove('playing');
+                clearInterval(noteInterval);
+                isPlaying = false;
+            } else {
+                bgMusic.play().then(() => {
+                    musicBtn.textContent = '⏸️';
+                    musicBtn.classList.add('playing');
+                    startMusicNotes();
+                    isPlaying = true;
+                }).catch(e => {
+                    console.log('播放失败:', e);
+                    alert('播放失败，请检查网络连接或选择本地音乐文件');
+                    isPlaying = false;
+                });
+            }
+        }
+
+        function loadMusicFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                bgMusic.src = url;
+                bgMusic.load();
+                
+                // 显示加载成功提示
+                const fileName = file.name.replace(/\.[^/.]+$/, "");
+                const title = document.querySelector('.title');
+                title.textContent = `✨ ${fileName} ✨`;
+                                // 停止当前播放（如果有）
+                if (isPlaying) {
+                    bgMusic.pause();
+                    musicBtn.textContent = '▶️';
+                    musicBtn.classList.remove('playing');
+                    clearInterval(noteInterval);
+                    isPlaying = false;
+                }
+                
+                // 自动开始播放
+                setTimeout(() => {
+                    bgMusic.play().then(() => {
+                        musicBtn.textContent = '⏸️';
+                        musicBtn.classList.add('playing');
+                        startMusicNotes();
+                        isPlaying = true;
+                    }).catch(e => {
+                        console.log('自动播放失败:', e);
+                        alert('音乐文件加载失败，请尝试其他文件');
+                    });
+                }, 500);
+            }
+        }
+
+        function startMusicNotes() {
+            const noteSymbols = ['♪', '♫', '♬', '♩'];
+            noteInterval = setInterval(() => {
+                if (!isPlaying) return;
+                
+                const note = document.createElement('div');
+                note.className = 'note';
+                note.textContent = noteSymbols[Math.floor(Math.random() * noteSymbols.length)];
+                note.style.left = Math.random() * 100 + '%';
+                note.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                note.style.fontSize = (Math.random() * 20 + 16) + 'px';
+                
+                musicNotesContainer.appendChild(note);
+                
+                setTimeout(() => {
+                    note.remove();
+                }, 10000);
+            }, 800);
+        }
+
+        volumeSlider.addEventListener('input', (e) => {
+            bgMusic.volume = e.target.value / 100;
+        });
+
+        bgMusic.volume = 0.5;
+
+        function createGallery() {
+            const totalCards = images.length;
+            const angle = 360 / totalCards;
+            const radius = 400;
+
+            images.forEach((img, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.transform = `rotateY(${index * angle}deg) translateZ(${radius}px)`;
+                
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="${img.src}" alt="${img.title}" onerror="this.src='https://via.placeholder.com/300x400/${getRandomColor()}?text=图片${index+1}'">
+                        </div>
+                        <div class="card-back" style="background: ${colors[index]}">
+                            <h3>${img.title}</h3>
+                            <p>${img.desc}</p>
+                        </div>
+                    </div>
+                `;
+                
+                card.addEventListener('click', function() {
+                    this.classList.toggle('flipped');
+                });
+                
+                gallery.appendChild(card);
+            });
+        }
+
+        function getRandomColor() {
+            const hexColors = ['ff6b6b', '4ecdc4', 'a8e6cf', 'ffd93d', '6c5ce7', 'fd79a8', '00b894', 'e17055'];
+            return hexColors[Math.floor(Math.random() * hexColors.length)];
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.width = (Math.random() * 4 + 2) + 'px';
+                particle.style.height = particle.style.width;
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        function toggleRotation() {
+            isRotating = !isRotating;
+            gallery.style.animationPlayState = isRotating ? 'running' : 'paused';
+        }
+
+        function changeSpeed() {
+            const speeds = [30, 20, 10, 5];
+            const currentIndex = speeds.indexOf(currentSpeed);
+            const nextIndex = (currentIndex + 1) % speeds.length;
+            currentSpeed = speeds[nextIndex];
+            gallery.style.animationDuration = currentSpeed + 's';
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            gallery.style.transform = `rotateX(${-y}deg) rotateY(${x}deg)`;
+        });
+
+        bgMusic.volume = 0.5;
+
+        createGallery();
+        createParticles();
+
+        window.addEventListener('load', () => {
+            console.log('页面加载完成，音乐播放器已就绪');
+            bgMusic.load();
+        });
+
+        bgMusic.addEventListener('error', (e) => {
+            console.log('音频加载错误:', e);
+        });
+
+        bgMusic.addEventListener('canplay', () => {
+            console.log('音频可以播放');
+        });
+    </script>
+</body>
+</html>
